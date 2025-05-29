@@ -260,9 +260,11 @@ static SQLRETURN GetVariableValue(SQLUSMALLINT col_idx, duckdb::OdbcHandleStmt *
 
 	// Note that the driver counts the null-termination character when returning character data to *TargetValuePtr.
 	// *TargetValuePtr must therefore contain space for the null-termination character.
-	if (null_terminate && buffer_length < sizeof(CHAR_TYPE)) {
-		return duckdb::SetDiagnosticRecord(hstmt, SQL_ERROR, "SQLGetData", "TargetValuePtr size is insufficient",
-		                                   duckdb::SQLStateType::ST_HY090, hstmt->dbc->GetDataSourceName());
+	if (buffer_length != 0) {
+		if (null_terminate && buffer_length < sizeof(CHAR_TYPE)) {
+			return duckdb::SetDiagnosticRecord(hstmt, SQL_ERROR, "SQLGetData", "TargetValuePtr size is insufficient",
+											duckdb::SQLStateType::ST_HY090, hstmt->dbc->GetDataSourceName());
+		}
 	}
 
 	// Reserve space for null-termination if necessary
@@ -275,7 +277,7 @@ static SQLRETURN GetVariableValue(SQLUSMALLINT col_idx, duckdb::OdbcHandleStmt *
 	std::size_t remaining_len = val_buf_len_bytes - last_len;
 
 	// Only the length is requested by the client
-	if (target_value_ptr == nullptr) {
+	if (buffer_length == 0) {
 		if (str_len_or_ind_ptr != nullptr) {
 			*str_len_or_ind_ptr = static_cast<SQLLEN>(remaining_len);
 			return SQL_SUCCESS;
